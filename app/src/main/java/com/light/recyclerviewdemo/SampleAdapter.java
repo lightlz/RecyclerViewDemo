@@ -17,6 +17,8 @@ import java.util.List;
 public class SampleAdapter extends RecyclerView.Adapter<SampleAdapter.ViewHolder> {
 
     private Context mCon;
+    private static final int TYPE_ITEM = 0;
+    private static final int TYPE_FOOTER = 1;
 
     public SampleAdapter(Context mCon) {
         this.mCon = mCon;
@@ -37,30 +39,63 @@ public class SampleAdapter extends RecyclerView.Adapter<SampleAdapter.ViewHolder
         this.mOnItemClickListener = mOnItemClickListener;
     }
 
-    @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new ViewHolder(LayoutInflater.from(mCon).inflate(R.layout.item_recycler,parent,false));
+    public interface OnLoadingMoreListener{
+        void onLoadingMore(int position);
+    }
+    private OnLoadingMoreListener onLoadingMoreListener;
+    public void setOnLoadingMoreListener(OnLoadingMoreListener onLoadingMoreListener) {
+        this.onLoadingMoreListener = onLoadingMoreListener;
     }
 
+    @Override
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if(viewType == TYPE_ITEM){
+            return new ViewHolder(LayoutInflater.from(mCon).inflate(R.layout.item_recycler,parent,false));
+        }else if(viewType == TYPE_FOOTER){
+            return new ViewHolder(LayoutInflater.from(mCon).inflate(R.layout.layout_footer,parent,false));
+        }
+        return null;
+    }
+
+//    @Override
+//    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+//
+//        return new ViewHolder(LayoutInflater.from(mCon).inflate(R.layout.item_recycler,parent,false));
+//    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if(position+1 == getItemCount()){
+            return TYPE_FOOTER;
+        }else{
+            return TYPE_ITEM;
+        }
+    }
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
 
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)holder.tv.getLayoutParams();
-        params.height = getHeight(position);
-        holder.tv.setLayoutParams(params);
+        if(position +1 != getItemCount()) {
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) holder.tv.getLayoutParams();
+            params.height = getHeight(position);
+            holder.tv.setLayoutParams(params);
 
-        /**
-         * 先设置了监听器，当有点击事件的时候，回调onitemclick传递view和position
-         */
-        if(mOnItemClickListener != null){
-            holder.tv.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int position = holder.getLayoutPosition();
-                    mOnItemClickListener.onItemClick(holder.tv,position);
-                }
-            });
+            /**
+             * 先设置了监听器，当有点击事件的时候，回调onitemclick传递view和position
+             */
+            if (mOnItemClickListener != null) {
+                holder.tv.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int position = holder.getLayoutPosition();
+                        mOnItemClickListener.onItemClick(holder.tv, position);
+                    }
+                });
+            }
+        }
+
+        if(onLoadingMoreListener != null && position == getItemCount()-1){
+            onLoadingMoreListener.onLoadingMore(position);
         }
 
     }
@@ -87,6 +122,7 @@ public class SampleAdapter extends RecyclerView.Adapter<SampleAdapter.ViewHolder
         }
     }
 
+
     private int getHeight(int position){
 
         int[] height = {240,320,480};
@@ -100,5 +136,14 @@ public class SampleAdapter extends RecyclerView.Adapter<SampleAdapter.ViewHolder
     public void remove(int positon){
         mDataSet.remove(positon);
         notifyItemRemoved(positon);
+    }
+
+    public void insertItems(int position){
+        int end = position+15;
+        for(int i=position;i<end;i++){
+            mDataSet.add(i, "insert");
+        }
+
+        notifyItemInserted(position);
     }
 }
